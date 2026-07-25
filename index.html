@@ -3,36 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drop-Off Brain Boost</title>
+    <title>Brain Boost</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #fdfaf6; margin: 0; padding: 0; display: flex; justify-content: center; }
-        #app-container { width: 100%; max-width: 400px; padding: 20px; background: white; min-height: 100vh; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background-color: #fdfaf6; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            width: 100vw; 
+            overflow-x: hidden;
+        }
+        #app-container { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 20px; 
+            background: white; 
+            min-height: 100vh; 
+            box-sizing: border-box; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            display: flex;
+            flex-direction: column;
+        }
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fce4b3; padding-bottom: 15px; margin-bottom: 20px; }
         .reset-btn { cursor: pointer; font-size: 1.2rem; }
-        .stats { font-size: 1rem; font-weight: bold; color: #d97706; }
         .profile-toggle { display: flex; gap: 8px; margin-bottom: 25px; }
-        .profile-toggle button { flex: 1; padding: 12px 5px; border: 2px solid #fcd34d; border-radius: 8px; background-color: #fef3c7; font-size: 0.95rem; color: #92400e; cursor: pointer; }
-        #btn-william.active { background-color: #f59e0b; color: white; border-color: #b45309; }
-        #btn-evan.active { background-color: #d97706; color: white; border-color: #92400e; }
-        #btn-coop.active { background-color: #b45309; color: white; border-color: #78350f; }
-        #question-container { background: #fffbeb; border-radius: 12px; padding: 25px 15px; text-align: center; margin-bottom: 20px; border: 2px solid #fcd34d; min-height: 90px; }
-        .answer-btn { display: block; width: 100%; padding: 18px; margin-bottom: 12px; border: 2px solid #fbbf24; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; }
-        .answer-btn:active { background: #fef3c7; }
+        .profile-toggle button { flex: 1; padding: 12px 5px; border: 2px solid #fcd34d; border-radius: 8px; background-color: #fef3c7; cursor: pointer; }
+        #btn-william.active { background-color: #f59e0b; color: white; }
+        #btn-evan.active { background-color: #d97706; color: white; }
+        #btn-coop.active { background-color: #b45309; color: white; }
+        #question-container { background: #fffbeb; border-radius: 12px; padding: 25px 15px; text-align: center; margin-bottom: 20px; border: 2px solid #fcd34d; }
+        .answer-btn { display: block; width: 100%; padding: 18px; margin-bottom: 12px; border: 2px solid #fbbf24; border-radius: 10px; background: white; cursor: pointer; }
         .hidden { display: none !important; }
-        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
     </style>
 </head>
 <body>
-    <canvas id="confetti-canvas"></canvas>
     <div id="app-container">
         <header>
-            <span class="reset-btn" onclick="resetApp()">🏠</span>
+            <span class="reset-btn" onclick="location.reload()">🏠</span>
             <h1>Brain Boost</h1>
-            <span class="reset-btn" onclick="toggleSettings()">⚙️</span>
+            <span class="reset-btn" onclick="document.getElementById('settings-modal').classList.toggle('hidden')">⚙️</span>
         </header>
         <div id="settings-modal" class="hidden" style="background:#fff3e0; padding:10px; margin-bottom:20px; border-radius:8px;">
             <input type="password" id="api-key-input" placeholder="Paste Gemini API Key" style="width:100%; padding:8px;">
-            <button onclick="saveApiKey()" style="width:100%; margin-top:5px;">Save Key</button>
+            <button onclick="localStorage.setItem('geminiApiKey', document.getElementById('api-key-input').value); alert('Key Saved!')" style="width:100%; margin-top:5px;">Save Key</button>
         </div>
         <div class="profile-toggle">
             <button id="btn-william" class="active" onclick="switchProfile('William')">William</button>
@@ -44,30 +59,25 @@
             <div id="question-container"><p id="question-text">Press Start to begin!</p></div>
             <button id="start-btn" class="answer-btn" onclick="startGame()">Start 5-Question Dash!</button>
             <div id="answers-container" class="hidden">
-                <button class="answer-btn" onclick="checkAnswer(0, event)" id="ans-0"></button>
-                <button class="answer-btn" onclick="checkAnswer(1, event)" id="ans-1"></button>
-                <button class="answer-btn" onclick="checkAnswer(2, event)" id="ans-2"></button>
-                <button class="answer-btn" onclick="checkAnswer(3, event)" id="ans-3"></button>
+                <button class="answer-btn" onclick="checkAnswer(0)" id="ans-0"></button>
+                <button class="answer-btn" onclick="checkAnswer(1)" id="ans-1"></button>
+                <button class="answer-btn" onclick="checkAnswer(2)" id="ans-2"></button>
+                <button class="answer-btn" onclick="checkAnswer(3)" id="ans-3"></button>
             </div>
         </main>
     </div>
     <script>
-        let currentPlayer = 'William', score = 0, qNum = 0, isPlaying = false;
+        let currentPlayer = 'William', score = 0, qNum = 0, currentQ = null;
         let queue = { William: [], Evan: [], Team: [] };
-        
-        function saveApiKey() { localStorage.setItem('geminiApiKey', document.getElementById('api-key-input').value); alert("Key Saved!"); }
-        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
-        function resetApp() { isPlaying = false; score = 0; qNum = 0; location.reload(); }
-        
+
         function switchProfile(p) {
             currentPlayer = p;
             document.querySelectorAll('.profile-toggle button').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-'+p.toLowerCase()).classList.add('active');
+            document.getElementById('btn-'+p.toLowerCase().replace('team','coop')).classList.add('active');
             document.getElementById('current-player-display').innerText = p + "'s Turn!";
         }
 
         async function startGame() {
-            isPlaying = true;
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('answers-container').classList.remove('hidden');
             loadNext();
@@ -76,135 +86,35 @@
         async function loadNext() {
             if (qNum >= 5) { endGame(); return; }
             qNum++;
-            document.getElementById('question-text').innerText = "Loading...";
+            document.getElementById('question-text').innerText = "Generating...";
             
-            // Logic: Try AI, fallback to procedural
-            let q = await getQuestion(currentPlayer);
-            currentQ = q;
-            document.getElementById('question-text').innerText = q.q;
-            q.options.forEach((o, i) => document.getElementById('ans-'+i).innerText = o);
+            // API Integration Logic
+            try {
+                const apiKey = localStorage.getItem('geminiApiKey');
+                if(!apiKey) throw new Error("No API Key");
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "Generate a multiple-choice question about science for 4th grade in JSON format: { 'q': '...', 'options': ['...', '...', '...', '...'], 'correctIndex': 0 }" }] }] })
+                });
+                const data = await response.json();
+                currentQ = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
+            } catch (e) {
+                currentQ = { q: "Math: What is 5+5?", options: ["10", "11", "9", "8"], correctIndex: 0 };
+            }
+            
+            document.getElementById('question-text').innerText = "✨ " + currentQ.q;
+            currentQ.options.forEach((o, i) => document.getElementById('ans-'+i).innerText = o);
         }
 
-        async function getQuestion(p) {
-            // Simplified fallback for demonstration
-            return { q: "Math: What is 5+5?", options: ["10", "11", "9", "8"], correctIndex: 0 };
-        }
-
-        function checkAnswer(idx, e) {
-            if (idx === currentQ.correctIndex) { score++; }
+        function checkAnswer(idx) {
+            if (idx === currentQ.correctIndex) score++;
             loadNext();
         }
 
         function endGame() {
-            isPlaying = false;
-            document.getElementById('question-text').innerText = "Score: " + score;
-            document.getElementById('start-btn').classList.remove('hidden');
-            document.getElementById('answers-container').classList.add('hidden');
-        }
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drop-Off Brain Boost</title>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #fdfaf6; margin: 0; padding: 0; display: flex; justify-content: center; }
-        #app-container { width: 100%; max-width: 400px; padding: 20px; background: white; min-height: 100vh; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; }
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fce4b3; padding-bottom: 15px; margin-bottom: 20px; }
-        .reset-btn { cursor: pointer; font-size: 1.2rem; }
-        .stats { font-size: 1rem; font-weight: bold; color: #d97706; }
-        .profile-toggle { display: flex; gap: 8px; margin-bottom: 25px; }
-        .profile-toggle button { flex: 1; padding: 12px 5px; border: 2px solid #fcd34d; border-radius: 8px; background-color: #fef3c7; font-size: 0.95rem; color: #92400e; cursor: pointer; }
-        #btn-william.active { background-color: #f59e0b; color: white; border-color: #b45309; }
-        #btn-evan.active { background-color: #d97706; color: white; border-color: #92400e; }
-        #btn-coop.active { background-color: #b45309; color: white; border-color: #78350f; }
-        #question-container { background: #fffbeb; border-radius: 12px; padding: 25px 15px; text-align: center; margin-bottom: 20px; border: 2px solid #fcd34d; min-height: 90px; }
-        .answer-btn { display: block; width: 100%; padding: 18px; margin-bottom: 12px; border: 2px solid #fbbf24; border-radius: 10px; background: white; font-size: 1.1rem; cursor: pointer; }
-        .answer-btn:active { background: #fef3c7; }
-        .hidden { display: none !important; }
-        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
-    </style>
-</head>
-<body>
-    <canvas id="confetti-canvas"></canvas>
-    <div id="app-container">
-        <header>
-            <span class="reset-btn" onclick="resetApp()">🏠</span>
-            <h1>Brain Boost</h1>
-            <span class="reset-btn" onclick="toggleSettings()">⚙️</span>
-        </header>
-        <div id="settings-modal" class="hidden" style="background:#fff3e0; padding:10px; margin-bottom:20px; border-radius:8px;">
-            <input type="password" id="api-key-input" placeholder="Paste Gemini API Key" style="width:100%; padding:8px;">
-            <button onclick="saveApiKey()" style="width:100%; margin-top:5px;">Save Key</button>
-        </div>
-        <div class="profile-toggle">
-            <button id="btn-william" class="active" onclick="switchProfile('William')">William</button>
-            <button id="btn-evan" onclick="switchProfile('Evan')">Evan</button>
-            <button id="btn-coop" onclick="switchProfile('Team')">Team</button>
-        </div>
-        <main>
-            <div id="current-player-display" style="text-align:center; font-weight:bold; margin-bottom:15px; color:#d97706;">William's Turn!</div>
-            <div id="question-container"><p id="question-text">Press Start to begin!</p></div>
-            <button id="start-btn" class="answer-btn" onclick="startGame()">Start 5-Question Dash!</button>
-            <div id="answers-container" class="hidden">
-                <button class="answer-btn" onclick="checkAnswer(0, event)" id="ans-0"></button>
-                <button class="answer-btn" onclick="checkAnswer(1, event)" id="ans-1"></button>
-                <button class="answer-btn" onclick="checkAnswer(2, event)" id="ans-2"></button>
-                <button class="answer-btn" onclick="checkAnswer(3, event)" id="ans-3"></button>
-            </div>
-        </main>
-    </div>
-    <script>
-        let currentPlayer = 'William', score = 0, qNum = 0, isPlaying = false;
-        let queue = { William: [], Evan: [], Team: [] };
-        
-        function saveApiKey() { localStorage.setItem('geminiApiKey', document.getElementById('api-key-input').value); alert("Key Saved!"); }
-        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
-        function resetApp() { isPlaying = false; score = 0; qNum = 0; location.reload(); }
-        
-        function switchProfile(p) {
-            currentPlayer = p;
-            document.querySelectorAll('.profile-toggle button').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-'+p.toLowerCase()).classList.add('active');
-            document.getElementById('current-player-display').innerText = p + "'s Turn!";
-        }
-
-        async function startGame() {
-            isPlaying = true;
-            document.getElementById('start-btn').classList.add('hidden');
-            document.getElementById('answers-container').classList.remove('hidden');
-            loadNext();
-        }
-
-        async function loadNext() {
-            if (qNum >= 5) { endGame(); return; }
-            qNum++;
-            document.getElementById('question-text').innerText = "Loading...";
-            
-            // Logic: Try AI, fallback to procedural
-            let q = await getQuestion(currentPlayer);
-            currentQ = q;
-            document.getElementById('question-text').innerText = q.q;
-            q.options.forEach((o, i) => document.getElementById('ans-'+i).innerText = o);
-        }
-
-        async function getQuestion(p) {
-            // Simplified fallback for demonstration
-            return { q: "Math: What is 5+5?", options: ["10", "11", "9", "8"], correctIndex: 0 };
-        }
-
-        function checkAnswer(idx, e) {
-            if (idx === currentQ.correctIndex) { score++; }
-            loadNext();
-        }
-
-        function endGame() {
-            isPlaying = false;
-            document.getElementById('question-text').innerText = "Score: " + score;
-            document.getElementById('start-btn').classList.remove('hidden');
+            document.getElementById('question-text').innerText = "Final Score: " + score + "/5";
             document.getElementById('answers-container').classList.add('hidden');
         }
     </script>
