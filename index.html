@@ -2,24 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This meta tag is critical to stop the phone from "zooming" or doubling the layout -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Brain Boost</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        /* This CSS forces the app to fit exactly one phone screen width */
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background-color: #fdfaf6;
+            background-color: #fffaf0; /* Warm cream background */
             margin: 0;
             padding: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center; /* Centers the app container */
             width: 100vw;
-            min-height: 100vh;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Hard lock to stop horizontal duplication */
         }
         #app-container {
             width: 100%;
@@ -28,46 +24,53 @@
             box-sizing: border-box;
             background: white;
             min-height: 100vh;
-            display: block;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05); /* Soft edge shadow */
         }
     </style>
 </head>
 <body class="antialiased">
     <div id="app-container">
         <header class="flex justify-between items-center border-b-2 border-yellow-200 pb-3 mb-4">
-            <button onclick="location.reload()" class="text-2xl">🏠</button>
-            <h1 class="text-xl font-bold text-gray-800">Brain Boost</h1>
-            <button onclick="document.getElementById('settings').classList.toggle('hidden')" class="text-2xl">⚙️</button>
+            <button onclick="location.reload()" class="text-2xl" aria-label="Home">🏠</button>
+            <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">Brain Boost</h1>
+            <button onclick="document.getElementById('settings').classList.toggle('hidden')" class="text-2xl" aria-label="Settings">⚙️</button>
         </header>
 
-        <div id="settings" class="hidden bg-orange-50 p-4 rounded-lg mb-4">
-            <input type="password" id="api-key" placeholder="Enter Gemini API Key" class="w-full p-2 border rounded mb-2 text-center text-lg">
-            <button onclick="saveKey()" class="w-full bg-yellow-500 text-white p-2 rounded font-bold">Save Key</button>
+        <div id="settings" class="hidden bg-orange-50 p-4 rounded-xl mb-4 border-2 border-orange-200">
+            <input type="password" id="api-key" placeholder="Enter Gemini API Key" class="w-full p-3 border-2 border-orange-200 rounded-lg mb-2 text-center text-lg focus:outline-none focus:border-yellow-400">
+            <button onclick="saveKey()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-lg font-bold shadow-md transition">Save Key</button>
         </div>
 
         <div class="flex gap-2 mb-6">
-            <button id="btn-william" onclick="setPlayer('William')" class="flex-1 p-3 rounded-lg border-2 border-yellow-400 bg-yellow-400 text-white font-bold">William</button>
-            <button id="btn-evan" onclick="setPlayer('Evan')" class="flex-1 p-3 rounded-lg border-2 border-yellow-400 bg-white text-yellow-500 font-bold">Evan</button>
+            <button id="btn-william" onclick="setPlayer('William')" class="flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-yellow-400 text-white font-bold text-lg shadow-sm transition">William</button>
+            <button id="btn-evan" onclick="setPlayer('Evan')" class="flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-white text-yellow-500 font-bold text-lg shadow-sm transition">Evan</button>
         </div>
 
-        <main id="game-ui">
-            <div id="question-box" class="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-2xl text-center mb-6 min-h-[150px] flex items-center justify-center">
-                <p id="question-text" class="text-lg font-medium text-gray-700">Press Start to begin!</p>
+        <main id="game-ui" class="flex-1 flex flex-col">
+            <div id="question-box" class="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-2xl text-center mb-6 min-h-[160px] flex flex-col items-center justify-center shadow-inner">
+                <p id="player-turn" class="text-sm font-bold text-yellow-600 uppercase tracking-wider mb-2">William's Turn</p>
+                <p id="question-text" class="text-xl font-semibold text-gray-800 leading-snug">Press Start to begin!</p>
             </div>
             
-            <button id="start-btn" onclick="startQuiz()" class="w-full bg-yellow-500 text-white p-4 rounded-xl font-bold text-lg shadow-lg">Start Dash</button>
+            <button id="start-btn" onclick="startQuiz()" class="w-full bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-white p-5 rounded-2xl font-bold text-xl shadow-lg transition-transform">Start 5-Question Dash!</button>
             
-            <div id="answers" class="hidden flex flex-col gap-3">
-                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
-                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
-                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
-                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
+            <div id="answers" class="hidden flex-col gap-3">
+                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
+                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
+                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
+                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
             </div>
         </main>
     </div>
 
     <script>
-        let currentPlayer = 'William', score = 0, qCount = 0, currentQ = null;
+        let currentPlayer = 'William';
+        let score = 0;
+        let qCount = 0;
+        let currentQuestionsList = []; // This will hold our batch of 5 questions
+        let currentQ = null;
         let isWaitingForNext = false;
 
         function saveKey() {
@@ -83,8 +86,16 @@
 
         function setPlayer(p) {
             currentPlayer = p;
-            document.getElementById('btn-william').className = p === 'William' ? 'flex-1 p-3 rounded-lg border-2 border-yellow-400 bg-yellow-400 text-white font-bold' : 'flex-1 p-3 rounded-lg border-2 border-yellow-400 bg-white text-yellow-500 font-bold';
-            document.getElementById('btn-evan').className = p === 'Evan' ? 'flex-1 p-3 rounded-lg border-2 border-yellow-400 bg-yellow-400 text-white font-bold' : 'flex-1 p-3 rounded-lg border-2 border-yellow-400 bg-white text-yellow-500 font-bold';
+            document.getElementById('player-turn').innerText = `${p}'s Turn`;
+            
+            // Highlight the active button
+            document.getElementById('btn-william').className = p === 'William' 
+                ? 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-yellow-400 text-white font-bold text-lg shadow-sm transition' 
+                : 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-white text-yellow-500 font-bold text-lg shadow-sm transition';
+            
+            document.getElementById('btn-evan').className = p === 'Evan' 
+                ? 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-yellow-400 text-white font-bold text-lg shadow-sm transition' 
+                : 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-white text-yellow-500 font-bold text-lg shadow-sm transition';
         }
 
         async function startQuiz() {
@@ -94,16 +105,72 @@
                 return;
             }
             
+            // Update UI for loading
             document.getElementById('start-btn').classList.add('hidden');
-            document.getElementById('answers').classList.remove('hidden');
+            document.getElementById('answers').classList.add('hidden');
+            document.getElementById('question-text').innerText = "Loading 5 questions...\n(This takes about 3 seconds!)";
+            
             score = 0;
             qCount = 0;
-            nextQuestion();
+            currentQuestionsList = [];
+
+            let grade = currentPlayer === 'William' ? '2nd grade' : '4th grade';
+
+            // New Batch Prompt: Asking for 5 questions at once in a JSON array
+            const prompt = `You are an expert elementary school teacher. Generate an array of 5 distinct, age-appropriate multiple-choice questions strictly for a ${grade} level student in the US. Mix subjects between Math, Science, Spelling, Reading Comprehension, and Geography. The difficulty MUST align precisely with standard educational curriculum for the ${grade}. Return ONLY a raw JSON array of 5 objects. No Markdown, no explanation. Format exactly like this: [{"q": "question text", "options": ["A", "B", "C", "D"], "correctIndex": 0}, {"q": "next question", "options": ["A", "B", "C", "D"], "correctIndex": 1}]`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                // Catch the specific rate limit (Too Many Requests) error
+                if (!res.ok) {
+                    if (res.status === 429) {
+                        throw new Error("Whoa! You guys are too fast! The free AI needs a 1-minute break.");
+                    }
+                    throw new Error("Server error: " + res.status);
+                }
+                
+                const data = await res.json();
+                if (data.error) throw new Error(data.error.message);
+                
+                // Check if we hit quota limits returned inside the data wrapper
+                if (data.error && data.error.message.includes("quota")) {
+                    throw new Error("Whoa! You guys are too fast! The free AI needs a 1-minute break.");
+                }
+
+                const rawText = data.candidates[0].content.parts[0].text;
+                const jsonText = rawText.replace(/```json|```/g, "").trim();
+                
+                // Parse the array of 5 questions
+                currentQuestionsList = JSON.parse(jsonText);
+                
+                // Start showing the questions
+                document.getElementById('answers').classList.remove('hidden');
+                document.getElementById('answers').style.display = 'flex';
+                nextQuestion();
+
+            } catch (e) {
+                let errorMsg = e.message;
+                // Double check for quota keywords just in case
+                if (errorMsg.includes("quota") || errorMsg.includes("429")) {
+                    errorMsg = "Whoa! You guys are too fast! The free AI needs a 1-minute break to catch up.";
+                }
+                document.getElementById('question-text').innerText = "Error: " + errorMsg;
+                console.error(e);
+                document.getElementById('start-btn').classList.remove('hidden');
+                document.getElementById('start-btn').innerText = "Retry";
+            }
         }
 
-        async function nextQuestion() {
+        function nextQuestion() {
             isWaitingForNext = false;
-            if (qCount >= 5) {
+            
+            // Check if game is over
+            if (qCount >= 5 || !currentQuestionsList[qCount]) {
                 document.getElementById('question-text').innerText = `Final Score: ${score}/5\nGreat job, ${currentPlayer}!`;
                 document.getElementById('answers').classList.add('hidden');
                 document.getElementById('start-btn').classList.remove('hidden');
@@ -111,75 +178,48 @@
                 return;
             }
             
-            document.getElementById('question-text').innerText = "Loading question...";
+            // Pull the next question directly from our pre-loaded array
+            currentQ = currentQuestionsList[qCount];
             
+            // Reset button styles
             for(let i=0; i<4; i++) {
                 const btn = document.getElementById('a'+i);
-                btn.style.display = 'none';
                 btn.style.backgroundColor = 'white'; 
+                btn.style.borderColor = '#e5e7eb'; // Tailwind gray-200
             }
 
-            const key = localStorage.getItem('geminiKey');
-            try {
-                // The correct grades are now assigned!
-                let grade = currentPlayer === 'William' ? '2nd grade' : '4th grade';
-                
-                // Focused subjects to keep questions relevant to school curriculum
-                const subjects = ["Math", "Science", "Spelling", "Reading Comprehension", "Geography"];
-                const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
-
-                // Strict prompt enforcing the curriculum
-                const prompt = `You are an expert elementary school teacher. Generate one age-appropriate ${randomSubject} multiple-choice question strictly for a ${grade} level student in the US. The difficulty MUST align precisely with standard educational curriculum for the ${grade}. Return ONLY a raw JSON object. No Markdown, no explanation. Format: {"q": "question text", "options": ["A", "B", "C", "D"], "correctIndex": 0}`;
-                
-                // Using the latest and fastest model
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                
-                const data = await res.json();
-                
-                if (data.error) throw new Error(data.error.message);
-                
-                const rawText = data.candidates[0].content.parts[0].text;
-                // Stripping out markdown just in case the AI includes it
-                const jsonText = rawText.replace(/```json|```/g, "").trim();
-                currentQ = JSON.parse(jsonText);
-                
-                document.getElementById('question-text').innerText = `Question ${qCount + 1}:\n${currentQ.q}`;
-                
-                currentQ.options.forEach((opt, i) => {
-                    const btn = document.getElementById('a'+i);
-                    btn.innerText = opt;
-                    btn.style.display = 'block';
-                });
-                qCount++;
-            } catch (e) {
-                document.getElementById('question-text').innerText = "Error: " + e.message;
-                console.error(e);
-                document.getElementById('start-btn').classList.remove('hidden');
-                document.getElementById('start-btn').innerText = "Retry connection";
-            }
+            document.getElementById('question-text').innerText = `Question ${qCount + 1}/5:\n${currentQ.q}`;
+            
+            currentQ.options.forEach((opt, i) => {
+                const btn = document.getElementById('a'+i);
+                btn.innerText = opt;
+            });
+            
+            qCount++;
         }
 
         function check(idx) {
-            // Stop them from clicking answers rapidly
             if(!currentQ || isWaitingForNext) return;
             isWaitingForNext = true;
             
+            const correctBtn = document.getElementById('a'+currentQ.correctIndex);
+            const clickedBtn = document.getElementById('a'+idx);
+
             if (idx === currentQ.correctIndex) {
                 score++;
-                document.getElementById('a'+idx).style.backgroundColor = '#86efac'; // Green
+                clickedBtn.style.backgroundColor = '#dcfce7'; // Tailwind green-100
+                clickedBtn.style.borderColor = '#4ade80';     // Tailwind green-400
             } else {
-                document.getElementById('a'+idx).style.backgroundColor = '#fca5a5'; // Red
-                document.getElementById('a'+currentQ.correctIndex).style.backgroundColor = '#86efac'; // Show the right answer
+                clickedBtn.style.backgroundColor = '#fee2e2'; // Tailwind red-100
+                clickedBtn.style.borderColor = '#f87171';     // Tailwind red-400
+                correctBtn.style.backgroundColor = '#dcfce7'; // Highlight correct answer
+                correctBtn.style.borderColor = '#4ade80';
             }
             
-            // Wait 2 seconds so they can see if they were right/wrong, then move on
+            // Brief 1.5-second pause to see the result, then instantly show the next question
             setTimeout(() => {
                 nextQuestion();
-            }, 2000);
+            }, 1500);
         }
     </script>
 </body>
