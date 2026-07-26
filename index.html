@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Brain Boost</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         body {
+            font-family: system-ui, -apple-system, sans-serif;
             background-color: #fdfaf6;
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
             width: 100vw;
+            min-height: 100vh;
             overflow-x: hidden;
-            font-family: sans-serif;
         }
         #app-container {
             width: 100%;
@@ -25,6 +26,7 @@
             box-sizing: border-box;
             background: white;
             min-height: 100vh;
+            display: block;
         }
     </style>
 </head>
@@ -37,8 +39,8 @@
         </header>
 
         <div id="settings" class="hidden bg-orange-50 p-4 rounded-lg mb-4">
-            <input type="password" id="api-key" placeholder="Enter Gemini API Key" class="w-full p-2 border rounded mb-2">
-            <button onclick="saveKey()" class="w-full bg-yellow-500 text-white p-2 rounded">Save Key</button>
+            <input type="password" id="api-key" placeholder="Enter Gemini API Key" class="w-full p-2 border rounded mb-2 text-center text-lg">
+            <button onclick="saveKey()" class="w-full bg-yellow-500 text-white p-2 rounded font-bold">Save Key</button>
         </div>
 
         <div class="flex gap-2 mb-6">
@@ -54,23 +56,27 @@
             <button id="start-btn" onclick="startQuiz()" class="w-full bg-yellow-500 text-white p-4 rounded-xl font-bold text-lg shadow-lg">Start Dash</button>
             
             <div id="answers" class="hidden flex flex-col gap-3">
-                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
-                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
-                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
-                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
+                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
+                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
+                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
+                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left text-lg font-medium"></button>
             </div>
         </main>
     </div>
 
     <script>
         let currentPlayer = 'William', score = 0, qCount = 0, currentQ = null;
+        let isWaitingForNext = false;
 
         function saveKey() {
             const key = document.getElementById('api-key').value.trim();
-            if(!key) return alert("Please enter a valid key");
+            if(!key) {
+                alert("Please enter a valid key");
+                return;
+            }
             localStorage.setItem('geminiKey', key);
-            alert('Key Saved! Refreshing...');
-            location.reload();
+            alert('Key Saved!');
+            document.getElementById('settings').classList.add('hidden');
         }
 
         function setPlayer(p) {
@@ -81,29 +87,45 @@
 
         async function startQuiz() {
             const key = localStorage.getItem('geminiKey');
-            if (!key) return document.getElementById('question-text').innerText = "Please set API Key in settings.";
+            if (!key) {
+                document.getElementById('question-text').innerText = "Please tap the ⚙️ gear icon and paste your API Key first.";
+                return;
+            }
             
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('answers').classList.remove('hidden');
+            score = 0;
+            qCount = 0;
             nextQuestion();
         }
 
         async function nextQuestion() {
+            isWaitingForNext = false;
             if (qCount >= 5) {
-                document.getElementById('question-text').innerText = `Final Score: ${score}/5`;
+                document.getElementById('question-text').innerText = `Final Score: ${score}/5\nGreat job, ${currentPlayer}!`;
                 document.getElementById('answers').classList.add('hidden');
                 document.getElementById('start-btn').classList.remove('hidden');
-                document.getElementById('start-btn').innerText = "Restart Dash";
-                qCount = 0; score = 0;
+                document.getElementById('start-btn').innerText = "Play Again";
                 return;
             }
-            qCount++;
-            document.getElementById('question-text').innerText = "Thinking...";
             
+            document.getElementById('question-text').innerText = "Loading question...";
+            
+            // Hide answers and reset colors while loading
+            for(let i=0; i<4; i++) {
+                const btn = document.getElementById('a'+i);
+                btn.style.display = 'none';
+                btn.style.backgroundColor = 'white'; 
+            }
+
             const key = localStorage.getItem('geminiKey');
             try {
-                const prompt = "Generate one 4th grade multiple-choice question in JSON format. Return ONLY the JSON object. No Markdown, no explanation. Format: {'q': 'question text', 'options': ['A', 'B', 'C', 'D'], 'correctIndex': 0}";
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                // Different difficulty for William vs Evan!
+                let grade = currentPlayer === 'William' ? '4th grade' : '2nd grade';
+                const prompt = `Generate one ${grade} multiple-choice question in JSON format. Return ONLY the JSON object. No Markdown, no explanation. Format: {"q": "question text", "options": ["A", "B", "C", "D"], "correctIndex": 0}`;
+                
+                // Updated to gemini-3-flash-preview
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
@@ -111,24 +133,50 @@
                 
                 const data = await res.json();
                 
-                if (data.error) throw new Error(data.error.message);
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
                 
                 const rawText = data.candidates[0].content.parts[0].text;
-                // Clean response for JSON parsing
+                // Clean response so JavaScript can read the JSON safely
                 const jsonText = rawText.replace(/```json|```/g, "").trim();
                 currentQ = JSON.parse(jsonText);
                 
-                document.getElementById('question-text').innerText = currentQ.q;
-                currentQ.options.forEach((opt, i) => document.getElementById('a'+i).innerText = opt);
+                document.getElementById('question-text').innerText = `Question ${qCount + 1}:\n${currentQ.q}`;
+                
+                currentQ.options.forEach((opt, i) => {
+                    const btn = document.getElementById('a'+i);
+                    btn.innerText = opt;
+                    btn.style.display = 'block';
+                });
+                qCount++;
             } catch (e) {
                 document.getElementById('question-text').innerText = "Error: " + e.message;
                 console.error(e);
+                // If it fails, show the start button so they can try again easily
+                document.getElementById('start-btn').classList.remove('hidden');
+                document.getElementById('start-btn').innerText = "Retry connection";
             }
         }
 
         function check(idx) {
-            if (idx === currentQ.correctIndex) score++;
-            nextQuestion();
+            // Prevent clicking multiple times while waiting for the next question
+            if(!currentQ || isWaitingForNext) return;
+            isWaitingForNext = true;
+            
+            if (idx === currentQ.correctIndex) {
+                score++;
+                document.getElementById('a'+idx).style.backgroundColor = '#86efac'; // Green color for correct
+            } else {
+                document.getElementById('a'+idx).style.backgroundColor = '#fca5a5'; // Red color for wrong
+                // Also show them the right answer
+                document.getElementById('a'+currentQ.correctIndex).style.backgroundColor = '#86efac'; 
+            }
+            
+            // Wait 2 seconds so they can see the colors, then load the next question
+            setTimeout(() => {
+                nextQuestion();
+            }, 2000);
         }
     </script>
 </body>
