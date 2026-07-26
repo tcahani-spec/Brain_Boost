@@ -14,8 +14,9 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
+            width: 100vw;
             overflow-x: hidden;
-            width: 100%;
+            font-family: sans-serif;
         }
         #app-container {
             width: 100%;
@@ -24,17 +25,15 @@
             box-sizing: border-box;
             background: white;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
     </style>
 </head>
 <body class="antialiased">
     <div id="app-container">
         <header class="flex justify-between items-center border-b-2 border-yellow-200 pb-3 mb-4">
-            <button onclick="location.reload()" class="text-xl">🏠</button>
+            <button onclick="location.reload()" class="text-2xl">🏠</button>
             <h1 class="text-xl font-bold text-gray-800">Brain Boost</h1>
-            <button onclick="document.getElementById('settings').classList.toggle('hidden')" class="text-xl">⚙️</button>
+            <button onclick="document.getElementById('settings').classList.toggle('hidden')" class="text-2xl">⚙️</button>
         </header>
 
         <div id="settings" class="hidden bg-orange-50 p-4 rounded-lg mb-4">
@@ -48,17 +47,17 @@
         </div>
 
         <main id="game-ui">
-            <div id="question-box" class="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-2xl text-center mb-6">
+            <div id="question-box" class="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-2xl text-center mb-6 min-h-[150px] flex items-center justify-center">
                 <p id="question-text" class="text-lg font-medium text-gray-700">Press Start to begin!</p>
             </div>
             
             <button id="start-btn" onclick="startQuiz()" class="w-full bg-yellow-500 text-white p-4 rounded-xl font-bold text-lg shadow-lg">Start Dash</button>
             
             <div id="answers" class="hidden flex flex-col gap-3">
-                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition"></button>
-                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition"></button>
-                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition"></button>
-                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition"></button>
+                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
+                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
+                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
+                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-yellow-400 rounded-xl hover:bg-yellow-50 transition text-left"></button>
             </div>
         </main>
     </div>
@@ -67,8 +66,11 @@
         let currentPlayer = 'William', score = 0, qCount = 0, currentQ = null;
 
         function saveKey() {
-            localStorage.setItem('geminiKey', document.getElementById('api-key').value);
-            alert('Key Saved!');
+            const key = document.getElementById('api-key').value.trim();
+            if(!key) return alert("Please enter a valid key");
+            localStorage.setItem('geminiKey', key);
+            alert('Key Saved! Refreshing...');
+            location.reload();
         }
 
         function setPlayer(p) {
@@ -78,6 +80,9 @@
         }
 
         async function startQuiz() {
+            const key = localStorage.getItem('geminiKey');
+            if (!key) return document.getElementById('question-text').innerText = "Please set API Key in settings.";
+            
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('answers').classList.remove('hidden');
             nextQuestion();
@@ -87,25 +92,37 @@
             if (qCount >= 5) {
                 document.getElementById('question-text').innerText = `Final Score: ${score}/5`;
                 document.getElementById('answers').classList.add('hidden');
+                document.getElementById('start-btn').classList.remove('hidden');
+                document.getElementById('start-btn').innerText = "Restart Dash";
+                qCount = 0; score = 0;
                 return;
             }
             qCount++;
-            document.getElementById('question-text').innerText = "Generating...";
+            document.getElementById('question-text').innerText = "Thinking...";
             
             const key = localStorage.getItem('geminiKey');
             try {
+                const prompt = "Generate one 4th grade multiple-choice question in JSON format. Return ONLY the JSON object. No Markdown, no explanation. Format: {'q': 'question text', 'options': ['A', 'B', 'C', 'D'], 'correctIndex': 0}";
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Generate a 4th grade multiple choice question in JSON: {'q': '...', 'options': ['A', 'B', 'C', 'D'], 'correctIndex': 0}" }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
+                
                 const data = await res.json();
-                const json = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
-                currentQ = json;
+                
+                if (data.error) throw new Error(data.error.message);
+                
+                const rawText = data.candidates[0].content.parts[0].text;
+                // Clean response for JSON parsing
+                const jsonText = rawText.replace(/```json|```/g, "").trim();
+                currentQ = JSON.parse(jsonText);
+                
                 document.getElementById('question-text').innerText = currentQ.q;
                 currentQ.options.forEach((opt, i) => document.getElementById('a'+i).innerText = opt);
             } catch (e) {
-                document.getElementById('question-text').innerText = "Error: Check your API Key.";
+                document.getElementById('question-text').innerText = "Error: " + e.message;
+                console.error(e);
             }
         }
 
