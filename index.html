@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- This meta tag is critical to stop the phone from "zooming" or doubling the layout -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Brain Boost</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
+        /* This CSS forces the app to fit exactly one phone screen width */
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: #fdfaf6;
@@ -111,7 +113,6 @@
             
             document.getElementById('question-text').innerText = "Loading question...";
             
-            // Hide answers and reset colors while loading
             for(let i=0; i<4; i++) {
                 const btn = document.getElementById('a'+i);
                 btn.style.display = 'none';
@@ -120,11 +121,17 @@
 
             const key = localStorage.getItem('geminiKey');
             try {
-                // Different difficulty for William vs Evan!
-                let grade = currentPlayer === 'William' ? '4th grade' : '2nd grade';
-                const prompt = `Generate one ${grade} multiple-choice question in JSON format. Return ONLY the JSON object. No Markdown, no explanation. Format: {"q": "question text", "options": ["A", "B", "C", "D"], "correctIndex": 0}`;
+                // The correct grades are now assigned!
+                let grade = currentPlayer === 'William' ? '2nd grade' : '4th grade';
                 
-                // Updated to gemini-3-flash-preview
+                // Focused subjects to keep questions relevant to school curriculum
+                const subjects = ["Math", "Science", "Spelling", "Reading Comprehension", "Geography"];
+                const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+
+                // Strict prompt enforcing the curriculum
+                const prompt = `You are an expert elementary school teacher. Generate one age-appropriate ${randomSubject} multiple-choice question strictly for a ${grade} level student in the US. The difficulty MUST align precisely with standard educational curriculum for the ${grade}. Return ONLY a raw JSON object. No Markdown, no explanation. Format: {"q": "question text", "options": ["A", "B", "C", "D"], "correctIndex": 0}`;
+                
+                // Using the latest and fastest model
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -133,12 +140,10 @@
                 
                 const data = await res.json();
                 
-                if (data.error) {
-                    throw new Error(data.error.message);
-                }
+                if (data.error) throw new Error(data.error.message);
                 
                 const rawText = data.candidates[0].content.parts[0].text;
-                // Clean response so JavaScript can read the JSON safely
+                // Stripping out markdown just in case the AI includes it
                 const jsonText = rawText.replace(/```json|```/g, "").trim();
                 currentQ = JSON.parse(jsonText);
                 
@@ -153,27 +158,25 @@
             } catch (e) {
                 document.getElementById('question-text').innerText = "Error: " + e.message;
                 console.error(e);
-                // If it fails, show the start button so they can try again easily
                 document.getElementById('start-btn').classList.remove('hidden');
                 document.getElementById('start-btn').innerText = "Retry connection";
             }
         }
 
         function check(idx) {
-            // Prevent clicking multiple times while waiting for the next question
+            // Stop them from clicking answers rapidly
             if(!currentQ || isWaitingForNext) return;
             isWaitingForNext = true;
             
             if (idx === currentQ.correctIndex) {
                 score++;
-                document.getElementById('a'+idx).style.backgroundColor = '#86efac'; // Green color for correct
+                document.getElementById('a'+idx).style.backgroundColor = '#86efac'; // Green
             } else {
-                document.getElementById('a'+idx).style.backgroundColor = '#fca5a5'; // Red color for wrong
-                // Also show them the right answer
-                document.getElementById('a'+currentQ.correctIndex).style.backgroundColor = '#86efac'; 
+                document.getElementById('a'+idx).style.backgroundColor = '#fca5a5'; // Red
+                document.getElementById('a'+currentQ.correctIndex).style.backgroundColor = '#86efac'; // Show the right answer
             }
             
-            // Wait 2 seconds so they can see the colors, then load the next question
+            // Wait 2 seconds so they can see if they were right/wrong, then move on
             setTimeout(() => {
                 nextQuestion();
             }, 2000);
