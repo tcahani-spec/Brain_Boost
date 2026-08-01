@@ -1,0 +1,35 @@
+name: Auto-Generate Fresh Trivia Pool
+
+on:
+  schedule:
+    # Runs at 00:00 UTC on the 1st and 21st of every month
+    - cron: '0 0 1,21 * *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI
+
+jobs:
+  build-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grants permission to push updated questions.json back to main
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Generator Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node generate.js
+
+      - name: Commit and Push New Questions
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add questions.json
+          git diff --staged --quiet || git commit -m "Auto-refresh question bank [skip ci]"
+          git push
