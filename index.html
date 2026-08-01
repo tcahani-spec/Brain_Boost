@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Drop-off Trivia Dash</title>
   <style>
     :root {
-      --bg-color: #f4f7fe;
+      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       --card-bg: #ffffff;
       --primary: #4318ff;
       --primary-hover: #3311cc;
       --william-color: #00b5d8;
       --evan-color: #805ad5;
-      --text-dark: #2b3674;
+      --text-dark: #1b2559;
       --text-muted: #a3edd9;
       --correct: #05cd99;
       --incorrect: #ee5d50;
@@ -21,14 +21,13 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     
     body {
-      background-color: var(--bg-color);
+      background: var(--bg-gradient);
       color: var(--text-dark);
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
       padding: 15px;
-      overflow-x: hidden;
     }
 
     #confetti-canvas {
@@ -41,68 +40,119 @@
       z-index: 99;
     }
 
-    .container {
+    .app-container {
       width: 100%;
       max-width: 480px;
       background: var(--card-bg);
       border-radius: 24px;
       padding: 20px;
-      box-shadow: 0px 18px 40px rgba(112, 144, 176, 0.12);
+      box-shadow: 0px 20px 40px rgba(0, 0, 0, 0.08);
       position: relative;
       z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
     }
 
-    .header {
+    /* --- TOP NAVBAR WITH HOME BUTTON --- */
+    .navbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #edf2f7;
     }
 
-    .profile-selector {
+    .home-btn {
       display: flex;
-      gap: 10px;
-      width: 100%;
-      margin-bottom: 20px;
-    }
-
-    .profile-btn {
-      flex: 1;
-      padding: 12px;
-      border: 2px solid #e0e5f2;
-      border-radius: 16px;
-      background: #fff;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #f4f7fe;
+      border: 1px solid #e0e5f2;
+      border-radius: 12px;
+      color: var(--text-dark);
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.9rem;
       cursor: pointer;
       transition: all 0.2s ease;
+    }
+
+    .home-btn:hover { background: #e2e8f0; }
+
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 20px;
+      background: #edf2f7;
+      color: #4a5568;
+    }
+
+    /* --- VIEWS --- */
+    .view { display: none; flex-direction: column; gap: 15px; }
+    .view.active { display: flex; }
+
+    /* --- HOME VIEW LAYOUT --- */
+    .welcome-header {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .welcome-header h1 {
+      font-size: 1.6rem;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .welcome-header p {
+      font-size: 0.95rem;
       color: #707ebe;
     }
 
-    .profile-btn.active[data-profile="william"] {
-      background: var(--william-color);
-      border-color: var(--william-color);
-      color: #fff;
-    }
-
-    .profile-btn.active[data-profile="evan"] {
-      background: var(--evan-color);
-      border-color: var(--evan-color);
-      color: #fff;
-    }
-
-    .api-config {
+    .profile-cards {
       display: flex;
-      gap: 8px;
-      margin-bottom: 15px;
+      flex-direction: column;
+      gap: 12px;
+      margin: 10px 0;
     }
 
-    .api-config input {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #e0e5f2;
-      border-radius: 8px;
-      font-size: 0.8rem;
+    .profile-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 2px solid #e0e5f2;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .profile-card:hover { transform: translateY(-2px); }
+
+    .profile-card[data-profile="william"] { border-left: 8px solid var(--william-color); }
+    .profile-card[data-profile="evan"] { border-left: 8px solid var(--evan-color); }
+
+    .profile-info h3 { font-size: 1.2rem; color: var(--text-dark); }
+    .profile-info p { font-size: 0.85rem; color: #707ebe; margin-top: 2px; }
+
+    .start-badge {
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: white;
+    }
+
+    .bg-william { background: var(--william-color); }
+    .bg-evan { background: var(--evan-color); }
+
+    /* --- QUIZ VIEW LAYOUT --- */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .progress-bar-container {
@@ -110,7 +160,6 @@
       width: 100%;
       background: #e0e5f2;
       border-radius: 4px;
-      margin-bottom: 20px;
       overflow: hidden;
     }
 
@@ -121,17 +170,12 @@
       transition: width 0.3s ease;
     }
 
-    .quiz-card {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
     .question-text {
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--text-dark);
       min-height: 60px;
+      line-height: 1.4;
     }
 
     .options-grid {
@@ -141,9 +185,9 @@
     }
 
     .option-btn {
-      padding: 14px 16px;
+      padding: 16px;
       border: 2px solid #e0e5f2;
-      border-radius: 12px;
+      border-radius: 14px;
       background: #f8fafc;
       font-size: 1rem;
       font-weight: 600;
@@ -156,30 +200,21 @@
     .option-btn.correct { background: var(--correct) !important; color: white; border-color: var(--correct); }
     .option-btn.incorrect { background: var(--incorrect) !important; color: white; border-color: var(--incorrect); }
 
-    .status-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: #edf2f7;
-      color: #4a5568;
+    /* API Config accordion */
+    .api-config {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #e0e5f2;
     }
 
-    .summary-card {
-      text-align: center;
-      padding: 20px 0;
-    }
-
-    .summary-card h2 { font-size: 2rem; margin-bottom: 10px; }
-    .summary-card button {
-      margin-top: 20px;
-      padding: 12px 24px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-weight: bold;
-      cursor: pointer;
+    .api-config input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #e0e5f2;
+      border-radius: 8px;
+      font-size: 0.8rem;
     }
   </style>
 </head>
@@ -187,37 +222,72 @@
 
   <canvas id="confetti-canvas"></canvas>
 
-  <div class="container">
-    <div class="header">
-      <span id="badge" class="status-badge">Ready (Offline Bank)</span>
-      <span id="score-counter" style="font-weight: bold;">Score: 0/5</span>
+  <div class="app-container">
+    <!-- Navbar Header -->
+    <div class="navbar">
+      <button class="home-btn" onclick="goHome()">🏠 Home</button>
+      <span id="badge" class="status-badge">Ready (Local Bank)</span>
     </div>
 
-    <!-- API Key Input -->
-    <div class="api-config">
-      <input type="password" id="api-key-input" placeholder="Paste Gemini API Key (Optional)" />
-      <button onclick="saveApiKey()" style="padding: 8px 12px; border-radius:8px; border:none; background:#2b3674; color:white; cursor:pointer;">Save</button>
+    <!-- VIEW 1: HOME SCREEN -->
+    <div id="home-view" class="view active">
+      <div class="welcome-header">
+        <h1>Drop-off Trivia Dash 🚗</h1>
+        <p>Choose a profile to start your morning trivia!</p>
+      </div>
+
+      <div class="profile-cards">
+        <div class="profile-card" data-profile="william" onclick="startQuizFor('william')">
+          <div class="profile-info">
+            <h3>William</h3>
+            <p>2nd Grade Trivia • Math, Science & AI</p>
+          </div>
+          <span class="start-badge bg-william">Start →</span>
+        </div>
+
+        <div class="profile-card" data-profile="evan" onclick="startQuizFor('evan')">
+          <div class="profile-info">
+            <h3>Evan</h3>
+            <p>4th Grade Trivia • Math, Science & AI</p>
+          </div>
+          <span class="start-badge bg-evan">Start →</span>
+        </div>
+      </div>
+
+      <!-- Optional API Key setup -->
+      <div class="api-config">
+        <input type="password" id="api-key-input" placeholder="Paste Gemini API Key (Optional)" />
+        <button onclick="saveApiKey()" style="padding: 8px 12px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:bold; cursor:pointer;">Save</button>
+      </div>
     </div>
 
-    <!-- Profile Selection -->
-    <div class="profile-selector">
-      <button class="profile-btn active" data-profile="william" onclick="selectProfile('william')">William (2nd Gr)</button>
-      <button class="profile-btn" data-profile="evan" onclick="selectProfile('evan')">Evan (4th Gr)</button>
-    </div>
+    <!-- VIEW 2: QUIZ SCREEN -->
+    <div id="quiz-view" class="view">
+      <div class="quiz-header">
+        <span id="player-tag" style="font-weight: bold; color: var(--text-dark);">Playing: William</span>
+        <span id="score-counter" style="font-weight: bold; color: var(--primary);">Score: 0/5</span>
+      </div>
 
-    <div class="progress-bar-container">
-      <div id="progress" class="progress-bar"></div>
-    </div>
+      <div class="progress-bar-container">
+        <div id="progress" class="progress-bar"></div>
+      </div>
 
-    <!-- Quiz Content -->
-    <div id="quiz-body" class="quiz-card">
       <div id="question" class="question-text">Loading question...</div>
       <div id="options" class="options-grid"></div>
+    </div>
+
+    <!-- VIEW 3: SUMMARY SCREEN -->
+    <div id="summary-view" class="view" style="text-align: center; padding: 20px 0;">
+      <h2 style="font-size: 2rem; margin-bottom: 10px;">🎉 Great Job!</h2>
+      <p id="summary-text" style="font-size: 1.1rem; color: #707ebe; margin-bottom: 20px;">You completed the drop-off trivia!</p>
+      <button onclick="goHome()" style="padding: 14px 28px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer;">
+        Back to Home
+      </button>
     </div>
   </div>
 
   <script>
-    // --- 1. STATIC INSTANT FALLBACK BANKS (0ms Latency) ---
+    // --- STATIC INSTANT FALLBACK BANKS (0ms Latency) ---
     const STATIC_BANKS = {
       william: [
         { q: "What is 15 + 8?", options: ["21", "22", "23", "24"], answer: 2 },
@@ -235,18 +305,16 @@
       ]
     };
 
-    // --- STATE MANAGEMENT ---
     let currentProfile = 'william';
-    let activeQuestions = [...STATIC_BANKS.william];
+    let activeQuestions = [];
     let currentIndex = 0;
     let score = 0;
     let abortController = null;
 
-    // --- INITIALIZATION ---
     window.onload = () => {
       const savedKey = localStorage.getItem('gemini_api_key');
       if (savedKey) document.getElementById('api-key-input').value = savedKey;
-      loadQuizSession();
+      goHome();
     };
 
     function saveApiKey() {
@@ -259,32 +327,35 @@
       document.getElementById('badge').innerText = msg;
     }
 
-    // --- PROFILE SWITCHING (FAST & SAFE) ---
-    function selectProfile(profile) {
-      if (currentProfile === profile && currentIndex < activeQuestions.length) return;
+    function switchView(viewId) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+    }
 
+    // --- HOME BUTTON ACTION ---
+    function goHome() {
+      if (abortController) abortController.abort(); // Cancel any pending background API fetch
+      switchView('home-view');
+      updateStatusBadge("Ready (Local Bank)");
+    }
+
+    // --- START QUIZ ---
+    function startQuizFor(profile) {
       currentProfile = profile;
-      document.querySelectorAll('.profile-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.profile === profile);
-      });
-
-      // 1. Instant local load (Fixes 3s lag)
       activeQuestions = [...STATIC_BANKS[profile]];
       currentIndex = 0;
       score = 0;
+
+      const profileName = profile === 'william' ? "William (2nd Gr)" : "Evan (4th Gr)";
+      document.getElementById('player-tag').innerText = `Playing: ${profileName}`;
+
+      switchView('quiz-view');
       renderQuestion();
 
-      // 2. Safely trigger background fetch for fresh questions
+      // Trigger background sync for AI questions
       fetchFreshQuestionsFromGemini(profile);
     }
 
-    function loadQuizSession() {
-      currentIndex = 0;
-      score = 0;
-      renderQuestion();
-    }
-
-    // --- UI RENDER ---
     function renderQuestion() {
       if (currentIndex >= activeQuestions.length) {
         renderSummary();
@@ -328,34 +399,20 @@
     }
 
     function renderSummary() {
-      document.getElementById('progress').style.width = `100%`;
-      document.getElementById('score-counter').innerText = `Score: ${score}/5`;
-      document.getElementById('quiz-body').innerHTML = `
-        <div class="summary-card">
-          <h2>🎉 Great Job!</h2>
-          <p>You scored <strong>${score} out of 5</strong>!</p>
-          <button onclick="restartQuiz()">Play Again</button>
-        </div>
-      `;
+      switchView('summary-view');
+      document.getElementById('summary-text').innerHTML = `You scored <strong>${score} out of 5</strong>!`;
+      triggerConfetti();
     }
 
-    function restartQuiz() {
-      location.reload();
-    }
-
-    // --- 2. GEMINI API FETCH (SAFE & NON-BLOCKING) ---
+    // --- NON-BLOCKING GEMINI API FETCH ---
     async function fetchFreshQuestionsFromGemini(profile) {
       const apiKey = localStorage.getItem('gemini_api_key');
-      if (!apiKey) {
-        updateStatusBadge("Offline (No Key)");
-        return;
-      }
+      if (!apiKey) return;
 
-      // Abort any prior pending request to avoid race conditions (Fixes Evan crash)
       if (abortController) abortController.abort();
       abortController = new AbortController();
 
-      updateStatusBadge("Syncing AI Questions...");
+      updateStatusBadge("Syncing AI...");
 
       const grade = profile === 'william' ? "2nd Grade" : "4th Grade";
       const prompt = `Generate 5 multiple-choice trivia questions for a ${grade} student. 
@@ -380,27 +437,27 @@
         const parsedQuestions = JSON.parse(rawText);
 
         if (Array.isArray(parsedQuestions) && parsedQuestions.length >= 5) {
-          STATIC_BANKS[profile] = parsedQuestions.slice(0, 5); // Cache fresh set
-          updateStatusBadge("AI Fresh Questions Ready!");
+          STATIC_BANKS[profile] = parsedQuestions.slice(0, 5);
+          updateStatusBadge("AI Questions Ready!");
         }
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.log("Fetch aborted due to profile switch.");
+          console.log("Fetch aborted cleanly.");
         } else {
-          console.warn("Gemini API call failed, keeping static bank:", err);
-          updateStatusBadge("Using Local Bank");
+          console.warn("Gemini API call failed, using static bank:", err);
+          updateStatusBadge("Local Bank Active");
         }
       }
     }
 
-    // --- 3. CANVAS CONFETTI EFFECT ---
+    // --- CANVAS CONFETTI ---
     function triggerConfetti() {
       const canvas = document.getElementById('confetti-canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      const particles = Array.from({ length: 40 }, () => ({
+      const particles = Array.from({ length: 35 }, () => ({
         x: canvas.width / 2,
         y: canvas.height / 2,
         vx: (Math.random() - 0.5) * 12,
@@ -419,7 +476,7 @@
             active = true;
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.3; // Gravity
+            p.vy += 0.3;
             p.alpha -= 0.02;
             ctx.fillStyle = p.color;
             ctx.globalAlpha = Math.max(0, p.alpha);
