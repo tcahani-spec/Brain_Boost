@@ -1,226 +1,436 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Brain Boost</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drop-off Trivia Dash</title>
+  <style>
+    :root {
+      --bg-color: #f4f7fe;
+      --card-bg: #ffffff;
+      --primary: #4318ff;
+      --primary-hover: #3311cc;
+      --william-color: #00b5d8;
+      --evan-color: #805ad5;
+      --text-dark: #2b3674;
+      --text-muted: #a3edd9;
+      --correct: #05cd99;
+      --incorrect: #ee5d50;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     
-    <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: #fffaf0; /* Warm cream background */
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center; /* Centers the app container */
-            width: 100vw;
-            overflow-x: hidden; /* Hard lock to stop horizontal duplication */
-        }
-        #app-container {
-            width: 100%;
-            max-width: 450px;
-            padding: 20px;
-            box-sizing: border-box;
-            background: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05); /* Soft edge shadow */
-        }
-    </style>
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+      overflow-x: hidden;
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0px 18px 40px rgba(112, 144, 176, 0.12);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-selector {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .profile-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e5f2;
+      border-radius: 16px;
+      background: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #707ebe;
+    }
+
+    .profile-btn.active[data-profile="william"] {
+      background: var(--william-color);
+      border-color: var(--william-color);
+      color: #fff;
+    }
+
+    .profile-btn.active[data-profile="evan"] {
+      background: var(--evan-color);
+      border-color: var(--evan-color);
+      color: #fff;
+    }
+
+    .api-config {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .api-config input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #e0e5f2;
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      width: 100%;
+      background: #e0e5f2;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .quiz-card {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .question-text {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      min-height: 60px;
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-btn {
+      padding: 14px 16px;
+      border: 2px solid #e0e5f2;
+      border-radius: 12px;
+      background: #f8fafc;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .option-btn:hover { background: #edf2f7; }
+    .option-btn.correct { background: var(--correct) !important; color: white; border-color: var(--correct); }
+    .option-btn.incorrect { background: var(--incorrect) !important; color: white; border-color: var(--incorrect); }
+
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #edf2f7;
+      color: #4a5568;
+    }
+
+    .summary-card {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .summary-card h2 { font-size: 2rem; margin-bottom: 10px; }
+    .summary-card button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body class="antialiased">
-    <div id="app-container">
-        <header class="flex justify-between items-center border-b-2 border-yellow-200 pb-3 mb-4">
-            <button onclick="location.reload()" class="text-2xl" aria-label="Home">🏠</button>
-            <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">Brain Boost</h1>
-            <button onclick="document.getElementById('settings').classList.toggle('hidden')" class="text-2xl" aria-label="Settings">⚙️</button>
-        </header>
+<body>
 
-        <div id="settings" class="hidden bg-orange-50 p-4 rounded-xl mb-4 border-2 border-orange-200">
-            <input type="password" id="api-key" placeholder="Enter Gemini API Key" class="w-full p-3 border-2 border-orange-200 rounded-lg mb-2 text-center text-lg focus:outline-none focus:border-yellow-400">
-            <button onclick="saveKey()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-lg font-bold shadow-md transition">Save Key</button>
-        </div>
+  <canvas id="confetti-canvas"></canvas>
 
-        <div class="flex gap-2 mb-6">
-            <button id="btn-william" onclick="setPlayer('William')" class="flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-yellow-400 text-white font-bold text-lg shadow-sm transition">William</button>
-            <button id="btn-evan" onclick="setPlayer('Evan')" class="flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-white text-yellow-500 font-bold text-lg shadow-sm transition">Evan</button>
-        </div>
-
-        <main id="game-ui" class="flex-1 flex flex-col">
-            <div id="question-box" class="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-2xl text-center mb-6 min-h-[160px] flex flex-col items-center justify-center shadow-inner">
-                <p id="player-turn" class="text-sm font-bold text-yellow-600 uppercase tracking-wider mb-2">William's Turn</p>
-                <p id="question-text" class="text-xl font-semibold text-gray-800 leading-snug">Press Start to begin!</p>
-            </div>
-            
-            <button id="start-btn" onclick="startQuiz()" class="w-full bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-white p-5 rounded-2xl font-bold text-xl shadow-lg transition-transform">Start 5-Question Dash!</button>
-            
-            <div id="answers" class="hidden flex-col gap-3">
-                <button onclick="check(0)" id="a0" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
-                <button onclick="check(1)" id="a1" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
-                <button onclick="check(2)" id="a2" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
-                <button onclick="check(3)" id="a3" class="w-full p-4 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 active:bg-gray-100 transition text-left text-lg font-medium text-gray-700 shadow-sm"></button>
-            </div>
-        </main>
+  <div class="container">
+    <div class="header">
+      <span id="badge" class="status-badge">Ready (Offline Bank)</span>
+      <span id="score-counter" style="font-weight: bold;">Score: 0/5</span>
     </div>
 
-    <script>
-        let currentPlayer = 'William';
-        let score = 0;
-        let qCount = 0;
-        let currentQuestionsList = []; // This will hold our batch of 5 questions
-        let currentQ = null;
-        let isWaitingForNext = false;
+    <!-- API Key Input -->
+    <div class="api-config">
+      <input type="password" id="api-key-input" placeholder="Paste Gemini API Key (Optional)" />
+      <button onclick="saveApiKey()" style="padding: 8px 12px; border-radius:8px; border:none; background:#2b3674; color:white; cursor:pointer;">Save</button>
+    </div>
 
-        function saveKey() {
-            const key = document.getElementById('api-key').value.trim();
-            if(!key) {
-                alert("Please enter a valid key");
-                return;
-            }
-            localStorage.setItem('geminiKey', key);
-            alert('Key Saved!');
-            document.getElementById('settings').classList.add('hidden');
+    <!-- Profile Selection -->
+    <div class="profile-selector">
+      <button class="profile-btn active" data-profile="william" onclick="selectProfile('william')">William (2nd Gr)</button>
+      <button class="profile-btn" data-profile="evan" onclick="selectProfile('evan')">Evan (4th Gr)</button>
+    </div>
+
+    <div class="progress-bar-container">
+      <div id="progress" class="progress-bar"></div>
+    </div>
+
+    <!-- Quiz Content -->
+    <div id="quiz-body" class="quiz-card">
+      <div id="question" class="question-text">Loading question...</div>
+      <div id="options" class="options-grid"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. STATIC INSTANT FALLBACK BANKS (0ms Latency) ---
+    const STATIC_BANKS = {
+      william: [
+        { q: "What is 15 + 8?", options: ["21", "22", "23", "24"], answer: 2 },
+        { q: "Which gas do plants absorb from the air?", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Helium"], answer: 1 },
+        { q: "Spell the word for a place with lots of books:", options: ["Librery", "Library", "Libary", "Lybrary"], answer: 1 },
+        { q: "What simple machine is a ramp?", options: ["Lever", "Inclined Plane", "Pulley", "Screw"], answer: 1 },
+        { q: "What holds a robot's instructions?", options: ["Batteries", "Code", "Wires", "Wheels"], answer: 1 }
+      ],
+      evan: [
+        { q: "What is 12 × 7?", options: ["72", "84", "96", "82"], answer: 1 },
+        { q: "Which part of the cell is known as the powerhouse?", options: ["Nucleus", "Mitochondria", "Cell Wall", "Ribosome"], answer: 1 },
+        { q: "Which word is an adverb?", options: ["Quickly", "Runner", "Bright", "Blue"], answer: 0 },
+        { q: "What force resists motion between two sliding surfaces?", options: ["Gravity", "Friction", "Magnetism", "Tension"], answer: 1 },
+        { q: "In AI, what does 'ML' stand for?", options: ["Machine Logic", "Machine Learning", "Model Layer", "Main Loop"], answer: 1 }
+      ]
+    };
+
+    // --- STATE MANAGEMENT ---
+    let currentProfile = 'william';
+    let activeQuestions = [...STATIC_BANKS.william];
+    let currentIndex = 0;
+    let score = 0;
+    let abortController = null;
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+      const savedKey = localStorage.getItem('gemini_api_key');
+      if (savedKey) document.getElementById('api-key-input').value = savedKey;
+      loadQuizSession();
+    };
+
+    function saveApiKey() {
+      const key = document.getElementById('api-key-input').value.trim();
+      localStorage.setItem('gemini_api_key', key);
+      updateStatusBadge("API Key Saved!");
+    }
+
+    function updateStatusBadge(msg) {
+      document.getElementById('badge').innerText = msg;
+    }
+
+    // --- PROFILE SWITCHING (FAST & SAFE) ---
+    function selectProfile(profile) {
+      if (currentProfile === profile && currentIndex < activeQuestions.length) return;
+
+      currentProfile = profile;
+      document.querySelectorAll('.profile-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.profile === profile);
+      });
+
+      // 1. Instant local load (Fixes 3s lag)
+      activeQuestions = [...STATIC_BANKS[profile]];
+      currentIndex = 0;
+      score = 0;
+      renderQuestion();
+
+      // 2. Safely trigger background fetch for fresh questions
+      fetchFreshQuestionsFromGemini(profile);
+    }
+
+    function loadQuizSession() {
+      currentIndex = 0;
+      score = 0;
+      renderQuestion();
+    }
+
+    // --- UI RENDER ---
+    function renderQuestion() {
+      if (currentIndex >= activeQuestions.length) {
+        renderSummary();
+        return;
+      }
+
+      const q = activeQuestions[currentIndex];
+      document.getElementById('score-counter').innerText = `Score: ${score}/5`;
+      document.getElementById('progress').style.width = `${(currentIndex / 5) * 100}%`;
+      document.getElementById('question').innerText = `${currentIndex + 1}. ${q.q}`;
+
+      const optionsContainer = document.getElementById('options');
+      optionsContainer.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => handleAnswer(idx, q.answer, btn);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(selectedIdx, correctIdx, btn) {
+      const buttons = document.querySelectorAll('.option-btn');
+      buttons.forEach(b => b.style.pointerEvents = 'none');
+
+      if (selectedIdx === correctIdx) {
+        btn.classList.add('correct');
+        score++;
+        triggerConfetti();
+      } else {
+        btn.classList.add('incorrect');
+        buttons[correctIdx].classList.add('correct');
+      }
+
+      setTimeout(() => {
+        currentIndex++;
+        renderQuestion();
+      }, 1200);
+    }
+
+    function renderSummary() {
+      document.getElementById('progress').style.width = `100%`;
+      document.getElementById('score-counter').innerText = `Score: ${score}/5`;
+      document.getElementById('quiz-body').innerHTML = `
+        <div class="summary-card">
+          <h2>🎉 Great Job!</h2>
+          <p>You scored <strong>${score} out of 5</strong>!</p>
+          <button onclick="restartQuiz()">Play Again</button>
+        </div>
+      `;
+    }
+
+    function restartQuiz() {
+      location.reload();
+    }
+
+    // --- 2. GEMINI API FETCH (SAFE & NON-BLOCKING) ---
+    async function fetchFreshQuestionsFromGemini(profile) {
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+        updateStatusBadge("Offline (No Key)");
+        return;
+      }
+
+      // Abort any prior pending request to avoid race conditions (Fixes Evan crash)
+      if (abortController) abortController.abort();
+      abortController = new AbortController();
+
+      updateStatusBadge("Syncing AI Questions...");
+
+      const grade = profile === 'william' ? "2nd Grade" : "4th Grade";
+      const prompt = `Generate 5 multiple-choice trivia questions for a ${grade} student. 
+        Subjects: Math, Science, Spelling, Engineering, and AI. 
+        Provide output as a raw JSON array of objects with keys: "q" (string), "options" (array of 4 strings), and "answer" (index 0-3 of correct answer).`;
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          signal: abortController.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const rawText = data.candidates[0].content.parts[0].text;
+        const parsedQuestions = JSON.parse(rawText);
+
+        if (Array.isArray(parsedQuestions) && parsedQuestions.length >= 5) {
+          STATIC_BANKS[profile] = parsedQuestions.slice(0, 5); // Cache fresh set
+          updateStatusBadge("AI Fresh Questions Ready!");
         }
-
-        function setPlayer(p) {
-            currentPlayer = p;
-            document.getElementById('player-turn').innerText = `${p}'s Turn`;
-            
-            // Highlight the active button
-            document.getElementById('btn-william').className = p === 'William' 
-                ? 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-yellow-400 text-white font-bold text-lg shadow-sm transition' 
-                : 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-white text-yellow-500 font-bold text-lg shadow-sm transition';
-            
-            document.getElementById('btn-evan').className = p === 'Evan' 
-                ? 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-yellow-400 text-white font-bold text-lg shadow-sm transition' 
-                : 'flex-1 p-3 rounded-xl border-2 border-yellow-400 bg-white text-yellow-500 font-bold text-lg shadow-sm transition';
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log("Fetch aborted due to profile switch.");
+        } else {
+          console.warn("Gemini API call failed, keeping static bank:", err);
+          updateStatusBadge("Using Local Bank");
         }
+      }
+    }
 
-        async function startQuiz() {
-            const key = localStorage.getItem('geminiKey');
-            if (!key) {
-                document.getElementById('question-text').innerText = "Please tap the ⚙️ gear icon and paste your API Key first.";
-                return;
-            }
-            
-            // Update UI for loading
-            document.getElementById('start-btn').classList.add('hidden');
-            document.getElementById('answers').classList.add('hidden');
-            document.getElementById('question-text').innerText = "Loading 5 questions...\n(This takes about 3 seconds!)";
-            
-            score = 0;
-            qCount = 0;
-            currentQuestionsList = [];
+    // --- 3. CANVAS CONFETTI EFFECT ---
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-            let grade = currentPlayer === 'William' ? '2nd grade' : '4th grade';
+      const particles = Array.from({ length: 40 }, () => ({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 12,
+        vy: (Math.random() - 0.5) * 12 - 4,
+        size: Math.random() * 8 + 4,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+        alpha: 1
+      }));
 
-            // New Batch Prompt: Asking for 5 questions at once in a JSON array
-            const prompt = `You are an expert elementary school teacher. Generate an array of 5 distinct, age-appropriate multiple-choice questions strictly for a ${grade} level student in the US. Mix subjects between Math, Science, Spelling, Reading Comprehension, and Geography. The difficulty MUST align precisely with standard educational curriculum for the ${grade}. Return ONLY a raw JSON array of 5 objects. No Markdown, no explanation. Format exactly like this: [{"q": "question text", "options": ["A", "B", "C", "D"], "correctIndex": 0}, {"q": "next question", "options": ["A", "B", "C", "D"], "correctIndex": 1}]`;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
 
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                
-                // Catch the specific rate limit (Too Many Requests) error
-                if (!res.ok) {
-                    if (res.status === 429) {
-                        throw new Error("Whoa! You guys are too fast! The free AI needs a 1-minute break.");
-                    }
-                    throw new Error("Server error: " + res.status);
-                }
-                
-                const data = await res.json();
-                if (data.error) throw new Error(data.error.message);
-                
-                // Check if we hit quota limits returned inside the data wrapper
-                if (data.error && data.error.message.includes("quota")) {
-                    throw new Error("Whoa! You guys are too fast! The free AI needs a 1-minute break.");
-                }
+        particles.forEach(p => {
+          if (p.alpha > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.3; // Gravity
+            p.alpha -= 0.02;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+          }
+        });
 
-                const rawText = data.candidates[0].content.parts[0].text;
-                const jsonText = rawText.replace(/```json|```/g, "").trim();
-                
-                // Parse the array of 5 questions
-                currentQuestionsList = JSON.parse(jsonText);
-                
-                // Start showing the questions
-                document.getElementById('answers').classList.remove('hidden');
-                document.getElementById('answers').style.display = 'flex';
-                nextQuestion();
-
-            } catch (e) {
-                let errorMsg = e.message;
-                // Double check for quota keywords just in case
-                if (errorMsg.includes("quota") || errorMsg.includes("429")) {
-                    errorMsg = "Whoa! You guys are too fast! The free AI needs a 1-minute break to catch up.";
-                }
-                document.getElementById('question-text').innerText = "Error: " + errorMsg;
-                console.error(e);
-                document.getElementById('start-btn').classList.remove('hidden');
-                document.getElementById('start-btn').innerText = "Retry";
-            }
-        }
-
-        function nextQuestion() {
-            isWaitingForNext = false;
-            
-            // Check if game is over
-            if (qCount >= 5 || !currentQuestionsList[qCount]) {
-                document.getElementById('question-text').innerText = `Final Score: ${score}/5\nGreat job, ${currentPlayer}!`;
-                document.getElementById('answers').classList.add('hidden');
-                document.getElementById('start-btn').classList.remove('hidden');
-                document.getElementById('start-btn').innerText = "Play Again";
-                return;
-            }
-            
-            // Pull the next question directly from our pre-loaded array
-            currentQ = currentQuestionsList[qCount];
-            
-            // Reset button styles
-            for(let i=0; i<4; i++) {
-                const btn = document.getElementById('a'+i);
-                btn.style.backgroundColor = 'white'; 
-                btn.style.borderColor = '#e5e7eb'; // Tailwind gray-200
-            }
-
-            document.getElementById('question-text').innerText = `Question ${qCount + 1}/5:\n${currentQ.q}`;
-            
-            currentQ.options.forEach((opt, i) => {
-                const btn = document.getElementById('a'+i);
-                btn.innerText = opt;
-            });
-            
-            qCount++;
-        }
-
-        function check(idx) {
-            if(!currentQ || isWaitingForNext) return;
-            isWaitingForNext = true;
-            
-            const correctBtn = document.getElementById('a'+currentQ.correctIndex);
-            const clickedBtn = document.getElementById('a'+idx);
-
-            if (idx === currentQ.correctIndex) {
-                score++;
-                clickedBtn.style.backgroundColor = '#dcfce7'; // Tailwind green-100
-                clickedBtn.style.borderColor = '#4ade80';     // Tailwind green-400
-            } else {
-                clickedBtn.style.backgroundColor = '#fee2e2'; // Tailwind red-100
-                clickedBtn.style.borderColor = '#f87171';     // Tailwind red-400
-                correctBtn.style.backgroundColor = '#dcfce7'; // Highlight correct answer
-                correctBtn.style.borderColor = '#4ade80';
-            }
-            
-            // Brief 1.5-second pause to see the result, then instantly show the next question
-            setTimeout(() => {
-                nextQuestion();
-            }, 1500);
-        }
-    </script>
+        if (active) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+  </script>
 </body>
 </html>
