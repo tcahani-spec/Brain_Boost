@@ -251,7 +251,23 @@
 
     function startQuizFor(profile) {
       currentProfile = profile;
-      activeQuestions = [...STATIC_BANKS[profile]];
+
+      // 1. Check local cache first (saved within 1 hour)
+      const cachedData = localStorage.getItem(`cache_${profile}`);
+      if (cachedData) {
+        try {
+          const { timestamp, questions } = JSON.parse(cachedData);
+          if (Date.now() - timestamp < 3600000) { // 1 Hour
+            activeQuestions = questions;
+            updateStatusBadge("Loaded (Cached AI)");
+          } else {
+            activeQuestions = [...STATIC_BANKS[profile]];
+          }
+        } catch(e) { activeQuestions = [...STATIC_BANKS[profile]]; }
+      } else {
+        activeQuestions = [...STATIC_BANKS[profile]];
+      }
+
       currentIndex = 0;
       score = 0;
 
@@ -260,6 +276,8 @@
 
       switchView('quiz-view');
       renderQuestion();
+      
+      // 2. Fetch fresh questions quietly in background only if cache is old or missing
       fetchFreshQuestionsFromGemini(profile);
     }
 
@@ -318,6 +336,18 @@
         return;
       }
 
+      // Check if cache is still fresh (< 1 hour) before calling API
+      const cachedData = localStorage.getItem(`cache_${profile}`);
+      if (cachedData) {
+        try {
+          const { timestamp } = JSON.parse(cachedData);
+          if (Date.now() - timestamp < 3600000) {
+            updateStatusBadge("AI Cache Active");
+            return; // Skip API call to preserve quota
+          }
+        } catch(e) {}
+      }
+
       if (abortController) abortController.abort();
       abortController = new AbortController();
 
@@ -337,6 +367,11 @@
           })
         });
 
+        if (response.status === 429) {
+          updateStatusBadge("Rate Limited (Local Bank)");
+          return;
+        }
+
         if (!response.ok) {
           const errDetails = await response.json().catch(() => ({}));
           throw new Error(`HTTP ${response.status}: ${errDetails.error?.message || response.statusText}`);
@@ -350,18 +385,20 @@
 
         if (Array.isArray(parsedQuestions) && parsedQuestions.length >= 5) {
           STATIC_BANKS[profile] = parsedQuestions.slice(0, 5);
+          // Save to local cache for 1 hour
+          localStorage.setItem(`cache_${profile}`, JSON.stringify({
+            timestamp: Date.now(),
+            questions: parsedQuestions.slice(0, 5)
+          }));
           updateStatusBadge("AI Questions Ready!");
-        } else {
-          throw new Error("Invalid JSON structure received");
         }
 
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.log("Fetch aborted due to screen change.");
+          console.log("Fetch aborted cleanly.");
         } else {
-          console.error("Gemini API Error Detail:", err);
-          const displayErr = err.message.length > 22 ? err.message.slice(0, 22) + "..." : err.message;
-          updateStatusBadge(`Err: ${displayErr}`);
+          console.error("Gemini API Error:", err);
+          updateStatusBadge("Local Bank Active");
         }
       }
     }
