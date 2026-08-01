@@ -1,0 +1,57 @@
+{
+  "updatedAt": "2026-08-01T00:00:00.000Z",
+  "william": [
+    {
+      "q": "Which gas do plants absorb from the air?",
+      "options": ["Oxygen", "Carbon Dioxide", "Nitrogen", "Helium"],
+      "answer": 1
+    },
+    {
+      "q": "Spell the word for a place with lots of books:",
+      "options": ["Librery", "Library", "Libary", "Lybrary"],
+      "answer": 1
+    },
+    {
+      "q": "What simple machine is a ramp?",
+      "options": ["Lever", "Inclined Plane", "Pulley", "Screw"],
+      "answer": 1
+    },
+    {
+      "q": "What holds a robot's instructions?",
+      "options": ["Batteries", "Code", "Wires", "Wheels"],
+      "answer": 1
+    },
+    {
+      "q": "What planet is closest to the Sun?",
+      "options": ["Venus", "Earth", "Mercury", "Mars"],
+      "answer": 2
+    }
+  ],
+  "evan": [
+    {
+      "q": "Which part of the cell is known as the powerhouse?",
+      "options": ["Nucleus", "Mitochondria", "Cell Wall", "Ribosome"],
+      "answer": 1
+    },
+    {
+      "q": "Which word is an adverb?",
+      "options": ["Quickly", "Runner", "Bright", "Blue"],
+      "answer": 0
+    },
+    {
+      "q": "What force resists motion between two sliding surfaces?",
+      "options": ["Gravity", "Friction", "Magnetism", "Tension"],
+      "answer": 1
+    },
+    {
+      "q": "In AI, what does 'ML' stand for?",
+      "options": ["Machine Logic", "Machine Learning", "Model Layer", "Main Loop"],
+      "answer": 1
+    },
+    {
+      "q": "What type of energy is stored in a battery?",
+      "options": ["Thermal", "Chemical", "Nuclear", "Kinetic"],
+      "answer": 1
+    }
+  ]
+}
