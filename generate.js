@@ -8,8 +8,10 @@ if (!API_KEY) {
 
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
-// Fetch 50 questions per batch to avoid API truncation
-async function fetchBatch(gradeLabel, topics) {
+// Helper delay function
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchBatchWithRetry(gradeLabel, topics, retries = 4) {
   const prompt = `Generate exactly 50 distinct multiple-choice trivia questions for a ${gradeLabel} student.
 Topics: ${topics}.
 Do NOT include math equations or math word problems.
@@ -18,43 +20,63 @@ Return output strictly as a JSON array of objects. Each object must have keys:
 - "options": array of 4 strings
 - "answer": integer index (0-3) of the correct answer.`;
 
-  const response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json" }
-    })
-  });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`API call failed (HTTP ${response.status}): ${errText}`);
+      if (response.status === 429) {
+        console.warn(`⚠️ Rate limit hit (HTTP 429). Waiting 20 seconds before retry (Attempt ${attempt}/${retries})...`);
+        await sleep(20000); // Pause 20 seconds
+        continue;
+      }
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`API call failed (HTTP ${response.status}): ${errText}`);
+      }
+
+      const data = await response.json();
+      let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+      rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+      return JSON.parse(rawText);
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.warn(`Retryable error: ${err.message}. Waiting 10s...`);
+      await sleep(10000);
+    }
   }
-
-  const data = await response.json();
-  let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-  rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-  return JSON.parse(rawText);
 }
 
 async function main() {
   console.log("🚀 Starting Trivia Question Generation...");
 
   try {
-    // William (2nd Grade) - 2 batches of 50 = 100 Questions
+    // William (2nd Grade)
     console.log("Fetching Batch 1 for William (2nd Grade)...");
-    const williamPart1 = await fetchBatch("2nd Grade", "Science, Spelling, Robots/AI, Simple Engineering");
-    console.log("Fetching Batch 2 for William (2nd Grade)...");
-    const williamPart2 = await fetchBatch("2nd Grade", "Animals, Space, Nature, Basic Technology");
-    const williamAll = [...williamPart1, ...williamPart2];
+    const williamPart1 = await fetchBatchWithRetry("2nd Grade", "Science, Spelling, Robots/AI, Simple Engineering");
+    await sleep(5000); // 5-second breath between batches
 
-    // Evan (4th Grade) - 2 batches of 50 = 100 Questions
+    console.log("Fetching Batch 2 for William (2nd Grade)...");
+    const williamPart2 = await fetchBatchWithRetry("2nd Grade", "Animals, Space, Nature, Basic Technology");
+    await sleep(5000);
+
+    // Evan (4th Grade)
     console.log("Fetching Batch 1 for Evan (4th Grade)...");
-    const evanPart1 = await fetchBatch("4th Grade", "Earth Science, Advanced Vocabulary, Artificial Intelligence, Machines");
+    const evanPart1 = await fetchBatchWithRetry("4th Grade", "Earth Science, Advanced Vocabulary, Artificial Intelligence, Machines");
+    await sleep(5000);
+
     console.log("Fetching Batch 2 for Evan (4th Grade)...");
-    const evanPart2 = await fetchBatch("4th Grade", "Solar System, Grammar & Parts of Speech, Electricity & Circuits, Computer Logic");
+    const evanPart2 = await fetchBatchWithRetry("4th Grade", "Solar System, Grammar & Parts of Speech, Electricity & Circuits, Computer Logic");
+
+    const williamAll = [...williamPart1, ...williamPart2];
     const evanAll = [...evanPart1, ...evanPart2];
 
     const outputData = {
@@ -64,7 +86,7 @@ async function main() {
     };
 
     fs.writeFileSync('questions.json', JSON.stringify(outputData, null, 2));
-    console.log(`✅ Success! Saved ${williamAll.length} questions for William and ${evanAll.length} questions for Evan to questions.json.`);
+    console.log(`✅ Success! Generated ${williamAll.length} questions for William and ${evanAll.length} questions for Evan.`);
 
   } catch (err) {
     console.error("❌ Generation failed:", err.message);
